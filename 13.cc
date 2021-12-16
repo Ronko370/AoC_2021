@@ -2,12 +2,30 @@
 #include <iostream>
 #include <vector>
 #include <set>
+#include <map>
 #include <boost/algorithm/string.hpp>
+#include <cstdio>
+#include <chrono>
+#include <thread>
+
+
+using T_points = std::set<std::pair<int,int>>;
+
+void print(const T_points& points){
+    printf("\e[2J");
+    for(const auto& p : points) {
+        int x = p.first+1 < 55 ? p.first+1 : 54;
+        int y = p.second+1 < 178 ? p.second+1 : 177;
+        printf("\e[%u;%uH#", x, y);
+    }
+    std::cout << std::endl;
+    std::cout.flush();
+}
 
 int main() {
     std::ifstream f("13_input.txt");
    // std::ifstream f("temp.txt");
-    std::set<std::pair<int,int>> points;
+    T_points points;
     std::vector<std::pair<char,int>> directions;
 
     for (std::string line; std::getline(f, line, '\n') && line != "";) {
@@ -28,42 +46,58 @@ int main() {
 
 // Fold
     for(const auto& d : directions) {
+        std::map<std::pair<int, int>, std::pair<int, int>>
+            changes,
+            no_changes;
+
         for(auto it = points.begin(); it != points.end();) {
-            const auto& p = *it;
+            const auto p = *it;
+            auto new_point = p;
             if(d.first == 'y' && p.second > d.second) {
-                it = points.erase(it);
-                points.insert({p.first, 2*d.second - p.second});
+                new_point = {p.first, 2*d.second - p.second};
             }
             else if(d.first == 'x' && p.first > d.second) {
-                it = points.erase(it);
-                points.insert({2*d.second - p.first, p.second});
-            } else {
-                it++;
+                new_point = {2*d.second - p.first, p.second};
             }
+
+            if(p == new_point) {
+                no_changes.insert({p, p});
+            } else {
+                changes.insert({new_point, p});
+            }
+
+            it = points.erase(it);
+            points.insert(new_point);
         }
+
+// Animation for 1 fold
+        bool updated;
+        do {
+            updated = false;
+            T_points changes_print;
+            for(const auto& [k, v] : changes)
+                changes_print.insert(v);
+            for(const auto& [k, v] : no_changes)
+                changes_print.insert(v);
+
+            print(changes_print);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            for(const auto& [k, v] : changes){
+                if(d.first == 'y' && v.second > k.second) {
+                    changes[k] = {v.first, v.second-1};
+                    updated = true;
+                }
+
+                if(d.first == 'x' && v.first > k.first) {
+                    changes[k] = {v.first-1, v.second};
+                    updated = true;
+                }
+            }
+        } while(updated);
 
 // Part 1
       //  break;
     }
-
-// Print
-    std::cout << "Points:" << std::endl;
-    int i = 0, j = 0;
-    for(const auto& p : points) {
-        while(i < p.first) {
-            std::cout << std::endl;
-            i++;
-            j = 0;
-        }
-
-        while(j < p.second) {
-            std::cout << " ";
-            j++;
-        }
-        std::cout << "#";
-        j++;
-    }
-    std::cout << std::endl;
 
     std::cout << "Number of points: " << points.size() << std::endl;
 }
