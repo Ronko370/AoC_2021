@@ -51,12 +51,18 @@ public:
         } else {
             Number result (*this, n);
             for(bool updated = true; updated;) {
-                std::cout << result << std::endl;;
                 updated = explode(&result) || split(&result);
-                std::cout << "end of round" << std::endl;
             }
             return result;
         }
+    }
+
+    int magnitude() const {
+        if(value) {
+            return *value;
+        }
+
+        return 3*left->magnitude() + 2*right->magnitude();
     }
 
 //private:
@@ -67,20 +73,12 @@ public:
 
         if(n->value) {
             return n;
+        } else {
+            return getLeaf(first, right);
         }
-        if(first) {
-            _n = getLeaf(first);
-        }
-
-        if(!_n && second) {
-            _n = getLeaf(second);
-        }
-
-        return _n;
     }
 
     Number* explode (Number* n, int depth = 0) {
-      //  std::cout << "a" << std::endl;
         Number* _n = nullptr;
         if (depth == 4 && n->left && n->right) {
             if(n->value) {
@@ -92,26 +90,19 @@ public:
 
         depth++;
         if(!n->value) {
-         //   std::cout << "b" << std::endl;
             _n = explode(n->left, depth);
             if(_n && _n->right) {
-            //    std::cout << "c" << std::endl;
                 *getLeaf(n->right)->value += *_n->right->value;
                 delete _n->right;
                 _n->right = nullptr;
-            //    std::cout << "cc" << std::endl;
             }
 
             if(!_n) {
-             //   std::cout << "d" << std::endl;
                 _n = explode(n->right, depth);
                 if(_n && _n->left) {
-                 //   std::cout << "e" << std::endl;
                     *getLeaf(n->left, true)->value += *_n->left->value;
-                 //   std::cout << "e_e" << std::endl;
                     delete _n->left;
                     _n->left = nullptr;
-             //       std::cout << "ee" << std::endl;
                 }
             }
         }
@@ -140,14 +131,19 @@ public:
 };
 
 int main() {
-    //std::ifstream f("18_input.txt");
+   // std::ifstream f("18_input.txt");
     std::ifstream f("temp.txt");
     Number sum;
     for(std::string s; f >> s;) {
-        sum = sum + Number(s);
+        Number n(s);
+        std::cout << n << std::endl;
+        std::cout << n.magnitude() << std::endl;
+        sum = sum + n;
     }
 
     std::cout << sum << std::endl;
+
+    std::cout << sum.magnitude() << std::endl;
 
 /*
     std::vector<Number> numbers;
